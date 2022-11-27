@@ -61,7 +61,7 @@ func (tc TestController) GetTestDetails(ctx *gin.Context) {
 	if testIdParam == "" {
 		ctx.JSON(http.StatusForbidden,
 			gin.H{"error": true, "message": "Invalid testId on search filter!"})
-		ctx.Abort()
+
 		return
 	}
 
@@ -71,7 +71,7 @@ func (tc TestController) GetTestDetails(ctx *gin.Context) {
 	testDetails, testErr := tc.testService.GetById(testIdParamUint)
 	if testErr != nil {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": true, " message": testErr.Error()})
-		ctx.Abort()
+
 		return
 
 	}

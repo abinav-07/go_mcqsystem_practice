@@ -34,7 +34,7 @@ func (qc QuestionController) CreateQuestionAndAnswers(ctx *gin.Context) {
 	if testIdParam == "" {
 		ctx.JSON(http.StatusForbidden,
 			gin.H{"error": true, "message": "Invalid testId on search filter!"})
-		ctx.Abort()
+
 		return
 	}
 
@@ -53,7 +53,7 @@ func (qc QuestionController) CreateQuestionAndAnswers(ctx *gin.Context) {
 	_, testErr := qc.testService.GetById(testIdParamUint)
 	if testErr != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": true, " message": testErr})
-		ctx.Abort()
+
 		return
 	}
 
