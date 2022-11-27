@@ -1,0 +1,6 @@
+# FOR sql-migrate Package: DOESN'T WORK RN
+development:
+  dialect:mysql
+  datasource:root@/go_mcq_pratice?parseTime=true
+  dir: database/migration
+  table: migrations

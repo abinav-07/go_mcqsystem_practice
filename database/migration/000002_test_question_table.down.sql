@@ -1,0 +1,6 @@
+BEGIN;
+DROP TABLE IF EXISTS user_test_report;
+DROP TABLE IF EXISTS options;
+DROP TABLE IF EXISTS questions;
+DROP TABLE IF EXISTS tests;
+COMMIT;
