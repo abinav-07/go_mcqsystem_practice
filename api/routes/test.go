@@ -37,6 +37,7 @@ func (i TestRoutes) Setup() {
 	//Grouped Routes
 	tests.POST("create", i.testController.CreateTests)
 	tests.GET("/:testId", i.testController.GetTestDetails)
+	tests.PATCH("/:testId/update", i.testController.UpdatePartial)
 	tests.POST("/:testId/question/add", i.questionController.CreateQuestionAndAnswers)
 
 }

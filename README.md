@@ -19,7 +19,8 @@ This project was done in order to practice GO lang. This project helps to unders
 - Get Test Details as Admin and User
 - Get all the available tests for User
 - Submit test and Generate report for User
+- Update test availability as Admin
 
-**TODO**: Delete User API for users and Update test availability API for admin 
+**TODO**: Delete User API for users and use transaction to understand how to use it
 
 

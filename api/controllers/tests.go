@@ -55,7 +55,7 @@ func (tc TestController) CreateTests(ctx *gin.Context) {
 
 func (tc TestController) GetTestDetails(ctx *gin.Context) {
 
-	//Empty Struct
+	//Assigned test id
 	testIdParam := ctx.Param("testId")
 
 	if testIdParam == "" {
@@ -78,4 +78,33 @@ func (tc TestController) GetTestDetails(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"msg": "Test Details!", "data": testDetails})
 
+}
+
+func (tc TestController) UpdatePartial(ctx *gin.Context) {
+
+	//Empty Struct
+	reqBody := struct{ models.Test }{}
+
+	// Bind Body to test struct
+	if err := ctx.ShouldBindJSON(&reqBody); err != nil {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": true, "message": err.Error()})
+		return
+	}
+
+	//Assigned test id
+	testIdParam := ctx.Param("testId")
+	testId, _ := strconv.ParseUint(testIdParam, 10, 32)
+	testIdParamUint := uint(testId)
+
+	//Update Test to unavailable
+
+	if _, err := tc.testService.UpdateOneTest(testIdParamUint, map[string]interface{}{
+		"is_available": reqBody.Test.IsAvailable,
+	}); err != nil {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": true, " message": err.Error()})
+
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"msg": "Test Updated!"})
 }

@@ -45,3 +45,8 @@ func (t TestService) GetTestByQuery(queryParams models.Test) ([]models.Test, err
 	return test, queryBuilder.Find(&test).Error
 
 }
+
+func (t TestService) UpdateOneTest(testID uint, updateTest map[string]interface{}) (models.Test, error) {
+	test := models.Test{}
+	return test, t.repository.DB.Model(&models.Test{}).Where("id = ?", testID).Updates(updateTest).Find(&test).Error
+}

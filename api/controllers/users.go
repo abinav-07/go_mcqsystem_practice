@@ -137,6 +137,7 @@ func (uc UserController) CreateTestReport(ctx *gin.Context) {
 		return
 	}
 
+	// Custom Response payload
 	payload := map[string]interface{}{
 		"reportId":  createdReport.ID,
 		"hasPassed": createdReport.HasPassed,
