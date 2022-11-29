@@ -1,22 +1,58 @@
 package services
 
 import (
+	"errors"
 	"github/abinav-07/mcq-test/database/models"
+	"github/abinav-07/mcq-test/dtos"
 	"github/abinav-07/mcq-test/infrastructure"
+
+	"gorm.io/gorm"
 )
 
 type UserService struct {
-	repository infrastructure.Database
+	repository      infrastructure.Database
+	firebaseService FirebaseService
 }
 
 // Constructor
-func NewUserService(database infrastructure.Database) UserService {
+func NewUserService(database infrastructure.Database, firebaseService FirebaseService) UserService {
 	return UserService{
-		repository: database,
+		repository:      database,
+		firebaseService: firebaseService,
 	}
 }
 
+// WithTrx -> enables repository with transaction
+func (c UserService) WithTrx(trxHandle *gorm.DB) (UserService, error) {
+	if trxHandle == nil {
+		return c, errors.New("Transaction DB not found")
+	}
+
+	c.repository.DB = trxHandle
+	return c, nil
+}
+
 // Create User
+func (c UserService) CreateUserWithFB(user models.User, claimData dtos.UserClaimMetaData) (*models.User, error) {
+	createdUser, createUserErr := c.Create(user)
+
+	if createUserErr != nil {
+		return nil, createUserErr
+	}
+
+	claimData.UserID = createdUser.ID
+
+	//Create Firebase user
+	fb_uid, err := c.firebaseService.GetCreateOrUpdateFirebaseUser(createdUser, claimData)
+	createdUser.FirebaseUID = fb_uid
+
+	if err != nil {
+		return nil, err
+	}
+
+	return createdUser, nil
+}
+
 func (c UserService) Create(user models.User) (*models.User, error) {
 	return &user, c.repository.DB.Create(&user).Preload("Role").Error
 }

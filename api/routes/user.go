@@ -19,6 +19,7 @@ func NewUserRoutes(
 	userController controllers.UserController,
 	testController controllers.TestController,
 	middlewares middlewares.AuthMW,
+
 ) UserRoutes {
 	return UserRoutes{
 		router:         router,

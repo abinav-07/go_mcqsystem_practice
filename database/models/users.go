@@ -13,6 +13,8 @@ type User struct {
 	CreatedAt time.Time `json:"-"`
 	UpdatedAt time.Time `json:"-"`
 	DeletedAt time.Time `json:"-"`
+
+	FirebaseUID string `gorm:"->" json:"firebase_uid"` // Readonly FirebaseUID alias
 }
 
 // Gives Table name of Model

@@ -2,26 +2,32 @@ package controllers
 
 import (
 	"github/abinav-07/mcq-test/api/services"
+	"github/abinav-07/mcq-test/constants"
 	"github/abinav-07/mcq-test/database/models"
+	"github/abinav-07/mcq-test/dtos"
 	"github/abinav-07/mcq-test/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type AuthController struct {
-	userService services.UserService
-	roleService services.RoleService
+	userService     services.UserService
+	roleService     services.RoleService
+	firebaseService services.FirebaseService
 }
 
 // Constructor
 func NewAuthController(
 	userServices services.UserService,
 	roleService services.RoleService,
+	firebaseService services.FirebaseService,
 ) AuthController {
 	return AuthController{
-		userService: userServices,
-		roleService: roleService,
+		userService:     userServices,
+		roleService:     roleService,
+		firebaseService: firebaseService,
 	}
 }
 
@@ -40,7 +46,8 @@ func (uc AuthController) RegisterUser(c *gin.Context) {
 	}
 
 	//Check if role exists or not
-	if _, err := uc.roleService.GetById(reqBody.RoleID); err != nil {
+	getRole, getRoleErr := uc.roleService.GetById(reqBody.RoleID)
+	if getRoleErr != nil {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": true, "message": "Role Not Found!"})
 		return
 	}
@@ -57,7 +64,17 @@ func (uc AuthController) RegisterUser(c *gin.Context) {
 	reqBody.Password = hashedPassword
 
 	//Create User
-	createdUser, createUserErr := uc.userService.Create(reqBody.User)
+	trx := c.MustGet(constants.DBTransaction).(*gorm.DB)
+
+	claimData := dtos.UserClaimMetaData{
+		UserRole: getRole.Role,
+	}
+	getTrx, getTrxErr := uc.userService.WithTrx(trx)
+	if getTrxErr != nil {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": true, "message": getTrxErr})
+		return
+	}
+	createdUser, createUserErr := getTrx.CreateUserWithFB(reqBody.User, claimData)
 
 	//This also check for duplicate errors
 	if createUserErr != nil {
@@ -97,6 +114,13 @@ func (ac AuthController) LoginUser(c *gin.Context) {
 	if okBool := utils.CheckPasswordHash(reqBody.Password, getUser.Password); !okBool {
 		c.JSON(http.StatusForbidden, gin.H{"error": true, "message": "Incorrect Password"})
 		return
+	}
+
+	//Get User from firebase to send FirebaseUID on response
+	getFBUser, _ := ac.firebaseService.GetUserByEmail(getUser.Email)
+
+	if getFBUser != nil {
+		getUser.FirebaseUID = getFBUser.UID
 	}
 
 	//Generate Token

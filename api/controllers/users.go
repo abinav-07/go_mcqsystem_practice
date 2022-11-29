@@ -38,12 +38,12 @@ func NewUserController(
 	userTestReportService services.UserTestReportService,
 ) UserController {
 	return UserController{
-		env:                   env,
-		roleService:           roleService,
-		userService:           userService,
-		testService:           testService,
-		questionService:       questionService,
-		userTestReportService: userTestReportService,
+		env:             env,
+		roleService:     roleService,
+		userService:     userService,
+		testService:     testService,
+		questionService: questionService,
+		// userTestReportService: userTestReportService,
 	}
 }
 

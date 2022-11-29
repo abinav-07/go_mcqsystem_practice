@@ -1,8 +1,11 @@
 package services
 
 import (
+	"errors"
 	"github/abinav-07/mcq-test/database/models"
 	"github/abinav-07/mcq-test/infrastructure"
+
+	"gorm.io/gorm"
 )
 
 type TestService struct {
@@ -14,6 +17,16 @@ func NewTestService(database infrastructure.Database) TestService {
 	return TestService{
 		repository: database,
 	}
+}
+
+// WithTrx -> enables repository with transaction
+func (c TestService) WithTrx(trxHandle *gorm.DB) (TestService, error) {
+	if trxHandle == nil {
+		return c, errors.New("Transaction DB not found")
+	}
+
+	c.repository.DB = trxHandle
+	return c, nil
 }
 
 // Create Test

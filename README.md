@@ -23,4 +23,6 @@ This project was done in order to practice GO lang. This project helps to unders
 
 **TODO**: Delete User API for users and use transaction to understand how to use it
 
+- To USE FireStore set current ENV in current PowerShell to $env:GOOGLE_APPLICATION_CREDENTIALS=`serviceAccountPath`
+
 

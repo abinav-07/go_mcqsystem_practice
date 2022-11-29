@@ -8,7 +8,7 @@ import (
 
 type AuthRoutes struct {
 	router         router.Router
-	middlewares    middlewares.AuthMW
+	middlewares    middlewares.DBTransactionMW
 	authController controllers.AuthController
 }
 
@@ -16,10 +16,12 @@ type AuthRoutes struct {
 func NewAuthRoutes(
 	router router.Router,
 	authController controllers.AuthController,
+	middlewares middlewares.DBTransactionMW,
 ) AuthRoutes {
 	return AuthRoutes{
 		router:         router,
 		authController: authController,
+		middlewares:    middlewares,
 	}
 }
 
@@ -28,6 +30,6 @@ func (i AuthRoutes) Setup() {
 	auths := i.router.Gin.Group("/auth")
 
 	//Grouped Auth routes
-	auths.POST("login", i.authController.LoginUser)
-	auths.POST("register", i.authController.RegisterUser)
+	auths.POST("login", i.middlewares.HandleDBTransaction(), i.authController.LoginUser)
+	auths.POST("register", i.middlewares.HandleDBTransaction(), i.authController.RegisterUser)
 }

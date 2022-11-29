@@ -1,21 +1,23 @@
 package middlewares
 
 import (
+	"fmt"
 	"github/abinav-07/mcq-test/api/services"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
-	"go.uber.org/fx"
 )
 
 type AuthMW struct {
-	userService services.UserService
+	userService     services.UserService
+	firebaseService services.FirebaseService
 }
 
-func NewAuthMiddlware(userService services.UserService) AuthMW {
+func NewAuthMiddlware(userService services.UserService, firebaseService services.FirebaseService) AuthMW {
 	return AuthMW{
-		userService: userService,
+		userService:     userService,
+		firebaseService: firebaseService,
 	}
 }
 
@@ -25,6 +27,8 @@ func (a AuthMW) CheckJWT() gin.HandlerFunc {
 
 		authHeader := ctx.GetHeader("Authorization")
 		tokenString := authHeader[len(BEARER_SCHEMA):]
+
+		fmt.Println("JWT TOKEN:", tokenString)
 
 		validJWT, err := services.NewJWTAuthService().ValidateToken(tokenString)
 
@@ -71,5 +75,3 @@ func (a AuthMW) CheckAdmin() gin.HandlerFunc {
 		ctx.Next()
 	}
 }
-
-var Module = fx.Options(fx.Provide(NewAuthMiddlware))

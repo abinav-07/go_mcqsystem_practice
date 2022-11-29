@@ -11,6 +11,8 @@ type TestRoutes struct {
 	testController     controllers.TestController
 	questionController controllers.QuestionController
 	middlewares        middlewares.AuthMW
+	fbMiddleware       middlewares.FirebaseAuthMW
+	trxMiddleware      middlewares.DBTransactionMW
 }
 
 // Group Test Routes
@@ -19,12 +21,16 @@ func NewTestRoutes(
 	testController controllers.TestController,
 	questionController controllers.QuestionController,
 	middlewares middlewares.AuthMW,
+	trxMiddleware middlewares.DBTransactionMW,
+	fbMiddleware middlewares.FirebaseAuthMW,
 ) TestRoutes {
 	return TestRoutes{
 		router:             router,
 		testController:     testController,
 		questionController: questionController,
 		middlewares:        middlewares,
+		fbMiddleware:       fbMiddleware,
+		trxMiddleware:      trxMiddleware,
 	}
 }
 
@@ -35,7 +41,7 @@ func (i TestRoutes) Setup() {
 	tests.Use(i.middlewares.CheckAdmin())
 
 	//Grouped Routes
-	tests.POST("create", i.testController.CreateTests)
+	tests.POST("create", i.fbMiddleware.HandleAdmin(), i.trxMiddleware.HandleDBTransaction(), i.testController.CreateTests)
 	tests.GET("/:testId", i.testController.GetTestDetails)
 	tests.PATCH("/:testId/update", i.testController.UpdatePartial)
 	tests.POST("/:testId/question/add", i.questionController.CreateQuestionAndAnswers)

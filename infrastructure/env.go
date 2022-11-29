@@ -3,14 +3,15 @@ package infrastructure
 import "os"
 
 type Env struct {
-	ServerPort  string
-	Environment string
-	DBUsername  string
-	DBPassword  string
-	DBHost      string
-	DBPort      string
-	DBName      string
-	SecretKey   string
+	ServerPort       string
+	Environment      string
+	DBUsername       string
+	DBPassword       string
+	DBHost           string
+	DBPort           string
+	DBName           string
+	SecretKey        string
+	FireStoreProject string
 }
 
 // Creates a new Environment
@@ -31,4 +32,6 @@ func (env *Env) LoadEnv() {
 	env.DBName = os.Getenv("DBName")
 
 	env.SecretKey = os.Getenv("JWTSecretKey")
+
+	env.FireStoreProject = os.Getenv("FireStoreProject")
 }

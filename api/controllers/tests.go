@@ -1,24 +1,30 @@
 package controllers
 
 import (
+	"encoding/json"
 	"github/abinav-07/mcq-test/api/services"
+	"github/abinav-07/mcq-test/constants"
 	"github/abinav-07/mcq-test/database/models"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type TestController struct {
-	testService services.TestService
+	testService      services.TestService
+	firestoreService services.FireStoreService
 }
 
 // Construct
 func NewTestController(
 	testService services.TestService,
+	firestoreService services.FireStoreService,
 ) TestController {
 	return TestController{
-		testService: testService,
+		testService:      testService,
+		firestoreService: firestoreService,
 	}
 }
 
@@ -43,9 +49,27 @@ func (tc TestController) CreateTests(ctx *gin.Context) {
 		return
 	}
 
-	createdTest, createdTestErr := tc.testService.Create(reqBody.Test)
+	//Create Test
+	trx := ctx.MustGet(constants.DBTransaction).(*gorm.DB)
+	getTrx, getTrxErr := tc.testService.WithTrx(trx)
+	if getTrxErr != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": true, "message": getTrxErr})
+		return
+	}
+	createdTest, createdTestErr := getTrx.Create(reqBody.Test)
 	if createdTestErr != nil {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": true, "message": createdTestErr})
+		return
+	}
+
+	//Create Test in firestore
+	fsTestPayload := make(map[string]interface{})
+	marshalledTest, _ := json.Marshal(createdTest)
+	json.Unmarshal(marshalledTest, &fsTestPayload)
+	_, fsTestErr := tc.firestoreService.SaveOrUpdateEntityWithId("Tests", createdTest.ID, fsTestPayload)
+
+	if fsTestErr != nil {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": true, "message": fsTestErr})
 		return
 	}
 
