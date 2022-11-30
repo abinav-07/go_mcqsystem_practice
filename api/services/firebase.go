@@ -111,3 +111,16 @@ func (fb *FirebaseService) SetClaim(uid string, claims gin.H) error {
 	err := fb.client.SetCustomUserClaims(context.Background(), uid, claims)
 	return err
 }
+
+// Detelte firebase User
+func (fb *FirebaseService) DeleteUser(email string) error {
+
+	getUser, getUserErr := fb.GetUserByEmail(email)
+
+	if getUserErr != nil {
+		return getUserErr
+	}
+
+	err := fb.client.DeleteUser(context.Background(), getUser.UID)
+	return err
+}

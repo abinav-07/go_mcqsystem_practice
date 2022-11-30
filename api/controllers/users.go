@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"github/abinav-07/mcq-test/api/services"
+	"github/abinav-07/mcq-test/constants"
 	"github/abinav-07/mcq-test/database/models"
 	"github/abinav-07/mcq-test/infrastructure"
 	"net/http"
@@ -21,6 +22,7 @@ type UserController struct {
 	testService           services.TestService
 	questionService       services.QuestionService
 	userTestReportService services.UserTestReportService
+	firebaseService       services.FirebaseService
 }
 
 type UserTestAnswers struct {
@@ -36,14 +38,16 @@ func NewUserController(
 	testService services.TestService,
 	questionService services.QuestionService,
 	userTestReportService services.UserTestReportService,
+	firebaseService services.FirebaseService,
 ) UserController {
 	return UserController{
-		env:             env,
-		roleService:     roleService,
-		userService:     userService,
-		testService:     testService,
-		questionService: questionService,
-		// userTestReportService: userTestReportService,
+		env:                   env,
+		roleService:           roleService,
+		userService:           userService,
+		testService:           testService,
+		questionService:       questionService,
+		userTestReportService: userTestReportService,
+		firebaseService:       firebaseService,
 	}
 }
 
@@ -146,5 +150,35 @@ func (uc UserController) CreateTestReport(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"msg": "Report Generated!", "data": payload})
+}
 
+// Deletes User From DB and FireBase Auth using Id
+func (uc UserController) DeleteUserById(ctx *gin.Context) {
+	//Assigned test id
+	userIdParam := ctx.Param("userId")
+	userId, _ := strconv.ParseUint(userIdParam, 10, 32)
+	userIdParamUint := uint(userId)
+
+	//Create Test
+	trx := ctx.MustGet(constants.DBTransaction).(*gorm.DB)
+	getTrx, getTrxErr := uc.userService.WithTrx(trx)
+
+	if getTrxErr != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": true, "message": getTrxErr})
+		return
+	}
+
+	deletedUser, deleteUserErr := getTrx.DeleteById(userIdParamUint)
+	if deleteUserErr != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": true, "message": deleteUserErr})
+		return
+	}
+
+	fbErr := uc.firebaseService.DeleteUser(deletedUser.Email)
+	if fbErr != nil {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": true, "message": fbErr})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"msg": "User Deleted!", "data": "Deleted User" + deletedUser.Email})
 }

@@ -92,7 +92,8 @@ func (tc TestController) GetTestDetails(ctx *gin.Context) {
 	testId, _ := strconv.ParseUint(testIdParam, 10, 32)
 	testIdParamUint := uint(testId)
 
-	testDetails, testErr := tc.testService.GetById(testIdParamUint)
+	//Get Test By Id From Database
+	_, testErr := tc.testService.GetById(testIdParamUint)
 	if testErr != nil {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": true, " message": testErr.Error()})
 
@@ -100,7 +101,17 @@ func (tc TestController) GetTestDetails(ctx *gin.Context) {
 
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"msg": "Test Details!", "data": testDetails})
+	//Get Test By Id From Firestore
+	fsTestDetails, fsTestErr := tc.firestoreService.GetEntityWithId("Tests", testIdParamUint)
+
+	if fsTestErr != nil {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": true, " message": fsTestErr.Error()})
+
+		return
+
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"msg": "Test Details!", "data": fsTestDetails.Data()})
 
 }
 
@@ -121,7 +132,6 @@ func (tc TestController) UpdatePartial(ctx *gin.Context) {
 	testIdParamUint := uint(testId)
 
 	//Update Test to unavailable
-
 	if _, err := tc.testService.UpdateOneTest(testIdParamUint, map[string]interface{}{
 		"is_available": reqBody.Test.IsAvailable,
 	}); err != nil {
@@ -130,5 +140,46 @@ func (tc TestController) UpdatePartial(ctx *gin.Context) {
 		return
 	}
 
+	//For Firestore
+	fsUpdateTestPayload := make(map[string]interface{})
+	marshalledTest, _ := json.Marshal(reqBody.Test)
+	json.Unmarshal(marshalledTest, &fsUpdateTestPayload)
+
+	_, fsUpdatedTestErr := tc.firestoreService.SaveOrUpdateEntityWithId("Tests", testIdParamUint, fsUpdateTestPayload)
+	if fsUpdatedTestErr != nil {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": true, "message": fsUpdatedTestErr})
+		return
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{"msg": "Test Updated!"})
+}
+
+func (fsc TestController) DeleteCollectionDocument(ctx *gin.Context) {
+	//Assigned test id
+	testIdParam := ctx.Param("testId")
+	testId, _ := strconv.ParseUint(testIdParam, 10, 32)
+	testIdParamUint := uint(testId)
+
+	//Create Test
+	trx := ctx.MustGet(constants.DBTransaction).(*gorm.DB)
+	getTrx, getTrxErr := fsc.testService.WithTrx(trx)
+	if getTrxErr != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": true, "message": getTrxErr})
+		return
+	}
+	_, deleteTestErr := getTrx.DeleteById(testIdParamUint)
+	if deleteTestErr != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": true, "message": deleteTestErr})
+		return
+	}
+
+	//Delete document from Firestore
+	err := fsc.firestoreService.DeleteCollectionWithId("Tests", testIdParamUint)
+
+	if err != nil {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": true, "message": err})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"msg": "Test Deleted!"})
 }

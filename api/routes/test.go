@@ -45,5 +45,5 @@ func (i TestRoutes) Setup() {
 	tests.GET("/:testId", i.testController.GetTestDetails)
 	tests.PATCH("/:testId/update", i.testController.UpdatePartial)
 	tests.POST("/:testId/question/add", i.questionController.CreateQuestionAndAnswers)
-
+	tests.DELETE("/:testId", i.trxMiddleware.HandleDBTransaction(), i.testController.DeleteCollectionDocument)
 }

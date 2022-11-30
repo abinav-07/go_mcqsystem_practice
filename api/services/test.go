@@ -34,6 +34,13 @@ func (t TestService) Create(test models.Test) (*models.Test, error) {
 	return &test, t.repository.DB.Create(&test).Error
 }
 
+// Create Test
+func (t TestService) DeleteById(ID uint) (*models.Test, error) {
+	test := models.Test{}
+	err := t.repository.DB.Model(&test).Where("id = ?", ID).Delete(&test).Find(&test).Error
+	return &test, err
+}
+
 // Get  Test By Id
 func (t TestService) GetById(ID uint) (*models.Test, error) {
 	test := models.Test{}

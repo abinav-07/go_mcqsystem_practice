@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"github/abinav-07/mcq-test/api/services"
 	"github/abinav-07/mcq-test/database/models"
 	"net/http"
@@ -10,18 +11,21 @@ import (
 )
 
 type QuestionController struct {
-	testService     services.TestService
-	questionService services.QuestionService
+	testService      services.TestService
+	questionService  services.QuestionService
+	fireStoreService services.FireStoreService
 }
 
 // Constructor
 func NewQuestionController(
 	testService services.TestService,
 	questionService services.QuestionService,
+	fireStoreService services.FireStoreService,
 ) QuestionController {
 	return QuestionController{
-		testService:     testService,
-		questionService: questionService,
+		testService:      testService,
+		questionService:  questionService,
+		fireStoreService: fireStoreService,
 	}
 }
 
@@ -64,6 +68,18 @@ func (qc QuestionController) CreateQuestionAndAnswers(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"msg": "Questions and answers Created!", "data": createQuestions})
+	//Create Test in firestore using the Test created in SQL
+	fsQuestionPayload := make(map[string]interface{})
+	marshalledQuestion, _ := json.Marshal(createQuestions)
+	json.Unmarshal(marshalledQuestion, &fsQuestionPayload)
+
+	fsCreatedQuestion, fsQuestionDetails := qc.fireStoreService.SaveOrUpdateEntityWithId("Tests/"+testIdParam+"/Questions", createQuestions.ID, fsQuestionPayload)
+
+	if fsQuestionDetails != nil {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": true, "message": fsQuestionDetails})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"msg": "Questions and answers Created!", "data": fsCreatedQuestion})
 
 }

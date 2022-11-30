@@ -69,3 +69,11 @@ func (c UserService) GetByEmail(email string) (*models.User, error) {
 
 	return &user, c.repository.DB.Where("email = ?", email).Preload("Role").First(&user).Error
 }
+
+// Create Test
+func (t UserService) DeleteById(ID uint) (*models.User, error) {
+	user := models.User{}
+	err := t.repository.DB.Model(&user).Where("id = ?", ID).Find(&user).Delete(&user).Error
+
+	return &user, err
+}
