@@ -62,7 +62,7 @@ func (tc TestController) CreateTests(ctx *gin.Context) {
 		return
 	}
 
-	//Create Test in firestore
+	//Create Test in firestore using the Test created in SQL
 	fsTestPayload := make(map[string]interface{})
 	marshalledTest, _ := json.Marshal(createdTest)
 	json.Unmarshal(marshalledTest, &fsTestPayload)
