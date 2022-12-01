@@ -33,6 +33,10 @@ func GetUpdatedUserClaim(fb_user *auth.UserRecord, claimData dtos.UserClaimMetaD
 		customClaim["role"] = constants.RoleUser
 	}
 
+	customClaim[constants.IsAdmin] = false
+	//Default to User
+	customClaim[constants.IsUser] = true
+
 	if claimData.UserRole == constants.RoleAdmin {
 		customClaim[constants.IsAdmin] = true
 		customClaim[constants.IsUser] = false
@@ -54,7 +58,7 @@ func (fb *FirebaseService) GetCreateOrUpdateFirebaseUser(user *models.User, clai
 	getUser, getUserErr := fb.GetUserByEmail(user.Email)
 	customClaim := gin.H{}
 
-	if getUser != nil && getUser.CustomClaims[claimData.UserRole] != true {
+	if getUser != nil {
 		customClaim = GetUpdatedUserClaim(getUser, claimData)
 	} else if getUser == nil {
 		getUser, getUserErr = fb.client.CreateUser(context.Background(), params)
@@ -75,6 +79,34 @@ func (fb *FirebaseService) GetCreateOrUpdateFirebaseUser(user *models.User, clai
 	getUserErr = fb.SetClaim(getUser.UID, customClaim)
 
 	return getUser.UID, getUserErr
+}
+
+// Update User Claim
+func (fb *FirebaseService) UpdateFirebaseUserClaim(email string, claimData dtos.UserClaimMetaData) (string, error) {
+	user, err := fb.GetUserByEmail(email)
+	customClaim := GetUpdatedUserClaim(user, claimData)
+	err = fb.SetClaim(user.UID, customClaim)
+	return user.UID, err
+}
+
+// GetUpdatePassword for user
+func (fb *FirebaseService) UpdateUserPassword(oldEmail, newEmail, password string) (string, error) {
+	user, err := fb.GetUserByEmail(oldEmail)
+	var params *auth.UserToUpdate
+	if password != "" {
+		params = (&auth.UserToUpdate{}).
+			Email(newEmail).
+			Password(password)
+	} else {
+		params = (&auth.UserToUpdate{}).
+			Email(newEmail)
+	}
+
+	if err != nil {
+		return "", err
+	}
+	fb.client.UpdateUser(context.Background(), user.UID, params)
+	return user.UID, err
 }
 
 // Create Admin User

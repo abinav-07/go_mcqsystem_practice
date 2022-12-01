@@ -42,7 +42,7 @@ func (i TestRoutes) Setup() {
 
 	//Grouped Routes
 	tests.POST("create", i.fbMiddleware.HandleAdmin(), i.trxMiddleware.HandleDBTransaction(), i.testController.CreateTests)
-	tests.GET("/:testId", i.testController.GetTestDetails)
+	tests.GET("/:testId", i.fbMiddleware.HandleAdmin(), i.testController.GetTestDetails)
 	tests.PATCH("/:testId/update", i.testController.UpdatePartial)
 	tests.POST("/:testId/question/add", i.questionController.CreateQuestionAndAnswers)
 	tests.DELETE("/:testId", i.trxMiddleware.HandleDBTransaction(), i.testController.DeleteCollectionDocument)

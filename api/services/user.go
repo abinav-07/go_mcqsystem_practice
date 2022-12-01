@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"github/abinav-07/mcq-test/database/models"
 	"github/abinav-07/mcq-test/dtos"
 	"github/abinav-07/mcq-test/infrastructure"
@@ -55,6 +56,42 @@ func (c UserService) CreateUserWithFB(user models.User, claimData dtos.UserClaim
 
 func (c UserService) Create(user models.User) (*models.User, error) {
 	return &user, c.repository.DB.Create(&user).Preload("Role").Error
+}
+
+func (t UserService) UpdateOneUser(userID uint, updateUser models.User) (models.User, error) {
+	user := models.User{}
+
+	return user, t.repository.DB.Model(&models.User{}).Where("id = ?", userID).Updates(updateUser).Find(&user).Error
+}
+
+func (t UserService) UpdateOneUserWithFB(userID uint, updateUser models.User, claimData dtos.UserClaimMetaData) (*models.User, error) {
+
+	getOldData, getOldDataErr := t.GetById(userID)
+
+	if getOldDataErr != nil {
+		return nil, getOldDataErr
+	}
+
+	updatedUser, updateUserErr := t.UpdateOneUser(userID, updateUser)
+	fmt.Println("Update User Detail", updateUser, updateUserErr)
+	if updateUserErr != nil {
+		return nil, updateUserErr
+	}
+
+	//Update Firebase user
+	_, err := t.firebaseService.UpdateUserPassword(getOldData.Email, updatedUser.Email, updatedUser.Password)
+
+	if err != nil {
+		return nil, err
+	}
+
+	//Update Claims
+	_, err = t.firebaseService.UpdateFirebaseUserClaim(updatedUser.Email, claimData)
+	if err != nil {
+		return nil, err
+	}
+
+	return &updatedUser, nil
 }
 
 // Get  User By Id
